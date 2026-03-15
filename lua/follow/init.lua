@@ -3,16 +3,17 @@ local config = require("follow.config")
 local parser = require("follow.parser")
 local target = require("follow.target")
 local highlight = require("follow.highlight")
--- TODO: support github syle ranges
--- TODO: fix bug with wrapped lines
 -- TODO: find better plugin name
+-- TODO: maybe piggyback on the match block of dismiss.nvim
+-- TODO: rename follow()
+-- TODO: new keymap for open in new split, even if eledible windows exist? introduce follow({ force_split = true }) ?
 
 -- Apply user config for the plugin.
 function M.setup(opts)
     config.setup(opts)
 end
 
--- Return whether the addressed line or line-range exists in the buffer
+-- Return whether the addressed line or line-range exists in the buffer.
 local function location_exists(buf, start_lnum, end_lnum)
     if not start_lnum then
         return false
@@ -37,7 +38,8 @@ end
 -- Ensure the addressed location is visible in the target window.
 --
 -- If the line or range is already on screen, leave the view unchanged.
--- Otherwise move the cursor to the start line and center the window around it.
+-- Otherwise move the cursor to the start line and place it roughly one quarter
+-- of the window height below the top.
 local function ensure_location_visible(win, start_lnum, end_lnum)
     local last_lnum = end_lnum or start_lnum
     local first_visible
@@ -51,9 +53,11 @@ local function ensure_location_visible(win, start_lnum, end_lnum)
         return
     end
 
-    vim.api.nvim_win_set_cursor(win, { start_lnum, 0 })
     vim.api.nvim_win_call(win, function()
-        vim.cmd("normal! zz")
+        vim.api.nvim_win_set_cursor(0, { start_lnum, 0 })
+        local view = vim.fn.winsaveview()
+        view.topline = math.max(start_lnum - math.floor(vim.api.nvim_win_get_height(0) * 0.25), 1)
+        vim.fn.winrestview(view)
     end)
 end
 
@@ -61,7 +65,7 @@ end
 --
 -- This chooses the target window, opens the file there when necessary, moves to
 -- the addressed location when it exists, and optionally highlights that
--- location instead of leaving focus in the target window.
+-- location while leaving focus in the source window.
 local function open_reference(path, start_lnum, end_lnum, opts)
     local source_win = vim.api.nvim_get_current_win()
     local target_win = target.select_target(source_win, path)
