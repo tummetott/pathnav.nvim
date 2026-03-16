@@ -5,14 +5,14 @@ local picker = require("follow.picker")
 
 -- Return whether this window is excluded as a target window.
 --
--- Exclusion is driven entirely by the user config under `open.exclude`. A
+-- Exclusion is driven entirely by the user config under `target.exclude`. A
 -- window is considered excluded when its buffer filetype or buftype is listed
 -- in the configured exclusion sets, or when the optional condition callback
 -- returns `true` for that window. The condition callback is protected with
 -- `pcall()` so a user callback failure does not break target selection;
 -- callback errors are treated as "not excluded".
 local function is_excluded(win)
-    local exclude = config.get().open.exclude
+    local exclude = config.get().target.exclude
     local buf = vim.api.nvim_win_get_buf(win)
     local condition_matches = false
 
@@ -29,17 +29,17 @@ end
 -- Collect all eligible target windows in the current tabpage.
 --
 -- Candidate windows are all non-floating windows in the current tabpage.
--- The source window is excluded when `open.exclude.current_win` is enabled.
+-- The source window is excluded when `target.exclude.current_win` is enabled.
 -- Any window matched by the configured exclude rules is removed as well.
 -- The returned list is sorted by window number so later selection and picker
 -- labeling remain deterministic.
 local function get_candidates(source_win)
     local wins = {}
-    local open_config = config.get().open
+    local target_config = config.get().target
 
     for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
         local is_float = vim.api.nvim_win_get_config(win).relative ~= ""
-        local skip_source_win = open_config.exclude.current_win and win == source_win
+        local skip_source_win = target_config.exclude.current_win and win == source_win
         if not is_float
             and not skip_source_win
             and not is_excluded(win) then
@@ -80,25 +80,25 @@ end
 --   1. If there is no eligible window, open a new one.
 --   2. If there is one eligible window, use it.
 --   3. If there are multiple eligible windows, exactly one already shows the
---      target file, and `open.picker.always_ask = false`, reuse that window.
+--      target file, and `target.picker.always_ask = false`, reuse that window.
 --   4. Otherwise, use the picker.
 function M.select_target(source_win, target_path)
     local wins = get_candidates(source_win)
-    local open_config = config.get().open
+    local target_config = config.get().target
 
     if #wins == 1 then
         return wins[1]
     end
 
     if #wins > 1 then
-        if not open_config.picker.always_ask then
+        if not target_config.picker.always_ask then
             local matching_wins = find_wins_showing_target(wins, target_path)
             if #matching_wins == 1 then
                 return matching_wins[1]
             end
         end
 
-        return picker.pick_window(wins, open_config.picker)
+        return picker.pick_window(wins, target_config.picker)
     end
 
     local target_win

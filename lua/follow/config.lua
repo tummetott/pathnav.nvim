@@ -9,7 +9,7 @@ local defaults = {
         hlgroup = "LspReferenceText",
         clear_events = { "CursorHold", "CursorHoldI" },
     },
-    open = {
+    target = {
         exclude = {
             current_win = true,
             filetypes = {},

@@ -123,7 +123,7 @@ Default configuration:
         clear_events = { "CursorHold", "CursorHoldI" },
     },
 
-    open = {
+    target = {
         -- Target windows are selected from the current tabpage after applying
         -- these exclusion rules.
         exclude = {
