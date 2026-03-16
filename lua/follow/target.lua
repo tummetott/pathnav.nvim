@@ -103,7 +103,7 @@ function M.select_target(source_win, target_path)
 
     local target_win
     vim.api.nvim_win_call(source_win, function()
-        vim.cmd("split")
+        vim.cmd("vsplit")
         target_win = vim.api.nvim_get_current_win()
     end)
     return target_win
