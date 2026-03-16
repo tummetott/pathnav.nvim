@@ -28,35 +28,35 @@ Example using **lazy.nvim**:
 
 ```lua
 return {
-  "tummetott/follow.nvim",
-  lazy = true,
-  opts = {
-    -- See config section
-  },
-  keys = {
-    {
-      "<c-]>",
-      function()
-        if not require("follow").follow({
-          jump = true,
-          highlight = false,
-        }) then
-          return "<C-]>"
-        end
-      end,
-      expr = true,
-      desc = "Follow reference or fallback to tag jump",
+    "tummetott/follow.nvim",
+    lazy = true,
+    opts = {
+        -- See config section
     },
-    {
-      "<c-[>",
-      function()
-        local ok = require("follow").follow({
-          jump = false,
-          highlight = true,
-        })
-      desc = "Highlight reference",
+    keys = {
+        {
+            "<c-]>",
+            function()
+                if not require("follow").follow({
+                    jump = true,
+                    highlight = false,
+                }) then
+                    vim.cmd("normal! <C-]>")
+                end
+            end,
+            desc = "Follow reference or fallback to tag jump",
+        },
+        {
+            "<c-[>",
+            function()
+                require("follow").follow({
+                    jump = false,
+                    highlight = true,
+                })
+            end,
+            desc = "Highlight reference",
+        },
     },
-  },
 }
 ```
 
@@ -81,8 +81,8 @@ Example: highlight the referenced location without changing the current window f
 
 ```lua
 require("follow").follow({
-  jump = false,
-  highlight = true,
+    jump = false,
+    highlight = true,
 })
 ```
 
@@ -118,27 +118,27 @@ Default configuration:
 
 ```lua
 {
-  highlight = {
-    hlgroup = "LspReferenceText",
-    clear_events = { "CursorHold", "CursorHoldI" },
-  },
-
-  open = {
-    -- Target windows are selected from the current tabpage after applying
-    -- these exclusion rules.
-    exclude = {
-      current_win = true,
-      filetypes = {},
-      buftypes = { "help", "nofile", "prompt", "quickfix", "terminal" },
-      condition = nil,
+    highlight = {
+        hlgroup = "LspReferenceText",
+        clear_events = { "CursorHold", "CursorHoldI" },
     },
 
-    picker = {
-      always_ask = false,
-      charset = "jklasdfhguiopqwert",
-      hlgroup = "FollowPickerLabel",
+    open = {
+        -- Target windows are selected from the current tabpage after applying
+        -- these exclusion rules.
+        exclude = {
+            current_win = true,
+            filetypes = {},
+            buftypes = { "help", "nofile", "prompt", "quickfix", "terminal" },
+            condition = nil,
+        },
+
+        picker = {
+            always_ask = false,
+            charset = "jklasdfhguiopqwert",
+            hlgroup = "FollowPickerLabel",
+        },
     },
-  },
 }
 ```
 
@@ -159,5 +159,3 @@ path/to/file.lua#L12-L20
 ```
 
 These may appear in plain text, markdown, or GitHub links.
-
----

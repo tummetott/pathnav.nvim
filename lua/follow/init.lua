@@ -101,8 +101,7 @@ end
 -- Follow the file reference under the cursor.
 --
 -- Returns `false` when no readable file reference could be resolved at the
--- cursor. When a reference is found, the actual window and buffer changes are
--- scheduled so this function can be used safely from expression mappings.
+-- cursor.
 function M.follow(opts)
     opts = vim.tbl_extend("force", {
         highlight = false,
@@ -118,10 +117,7 @@ function M.follow(opts)
         return false
     end
 
-    vim.schedule(function()
-        open_reference(path, start_lnum, end_lnum, opts)
-    end)
-
+    open_reference(path, start_lnum, end_lnum, opts)
     return true
 end
 
