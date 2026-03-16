@@ -83,10 +83,6 @@ local function open_reference(path, start_lnum, end_lnum, opts)
     end
     local has_location = location_exists(target_buf, start_lnum, end_lnum)
 
-    if opts.highlight then
-        highlight.clear()
-    end
-
     if has_location then
         ensure_location_visible(target_win, start_lnum, end_lnum)
 
@@ -112,6 +108,10 @@ function M.follow(opts)
         highlight = false,
         jump = true,
     }, opts or {})
+
+    if opts.highlight then
+        highlight.clear()
+    end
 
     local path, start_lnum, end_lnum = parser.parse_cursor_reference()
     if not path then

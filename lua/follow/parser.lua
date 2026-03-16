@@ -119,7 +119,7 @@ local function resolve_reference(token, state)
 
     -- Strip punctuation from the outer edges so references embedded in prose
     -- like `(foo.lua:12).` can still be recognized.
-    token = token:gsub("^[%(%[%{\"'`]+", ""):gsub("[%)%]%}\"'`,;%.]+$", "")
+    token = token:gsub("^[%(%[%{\"'`@]+", ""):gsub("[%)%]%}\"'`,;%.]+$", "")
 
     local path, start_lnum, end_lnum = resolve_hashtag_reference(token, state)
     if path then
