@@ -1,5 +1,17 @@
 local M = {}
 
+-- Expand user-home prefixes and return the readable local path.
+local function resolve_readable_path(path)
+    if not path or path == "" then
+        return nil
+    end
+
+    local expanded_path = vim.fn.expand(path)
+    if expanded_path ~= "" and vim.fn.filereadable(expanded_path) == 1 then
+        return expanded_path
+    end
+end
+
 local function current_checkout_commit(state)
     if state.current_commit == nil then
         state.current_commit = vim.fn.systemlist({ "git", "rev-parse", "HEAD" })[1] or false
@@ -23,10 +35,21 @@ local function resolve_hashtag_reference(token, state)
 
     -- Detect blob permalinks in the path portion. When present, only accept
     -- them if the embedded commit matches the current checkout.
-    -- TODO: warn when commit is present but not checked out
-    local _, commit, blob_path = path:match("^(.-)/blob/([^/]+)/(.+)$")
+    local _, commit, blob_path = path:match("^(.-)/blob/([0-9a-fA-F]+)/(.+)$")
     if commit then
-        if current_checkout_commit(state) ~= commit then
+        local checkout_commit = current_checkout_commit(state)
+        if not checkout_commit then
+            return nil
+        end
+
+        if checkout_commit ~= commit then
+            vim.notify(
+                ("Permalink points to commit %s, but the current checkout is %s."):format(
+                    commit:sub(1, 12),
+                    checkout_commit:sub(1, 12)
+                ),
+                vim.log.levels.WARN
+            )
             return nil
         end
         path = blob_path
@@ -56,7 +79,8 @@ local function resolve_hashtag_reference(token, state)
     end
 
     -- Only succeed once the resolved path exists locally.
-    if path ~= "" and vim.fn.filereadable(path) == 1 then
+    path = resolve_readable_path(path)
+    if path then
         return path, start_lnum, end_lnum
     end
 end
@@ -98,7 +122,8 @@ local function resolve_colon_reference(token)
         end_lnum = tonumber(end_lnum)
     end
 
-    if path ~= "" and vim.fn.filereadable(path) == 1 then
+    path = resolve_readable_path(path)
+    if path then
         return path, start_lnum, end_lnum
     end
 end
@@ -131,7 +156,8 @@ local function resolve_reference(token, state)
         return path, start_lnum, end_lnum
     end
 
-    if token ~= "" and vim.fn.filereadable(token) == 1 then
+    token = resolve_readable_path(token)
+    if token then
         return token
     end
 end

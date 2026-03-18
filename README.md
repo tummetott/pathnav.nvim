@@ -146,16 +146,16 @@ Default configuration:
 
 `follow.nvim` detects the following patterns:
 
-```
+``` 
 path/to/file.lua
+~/path/to/file.lua
 path/to/file.lua:12
 path/to/file.lua:12-20
 path/to/file.lua#L12
 path/to/file.lua#L12-20
 path/to/file.lua#L12-L20
+[link](path/to/file.lua#L12)
 .../blob/<commit>/path/to/file.lua#L12
-.../blob/<commit>/path/to/file.lua#L12-20
-.../blob/<commit>/path/to/file.lua#L12-L20
 ```
 
 These may appear in plain text, markdown, or GitHub links.
