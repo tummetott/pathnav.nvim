@@ -1,14 +1,14 @@
 local M = {}
 
--- Expand user-home prefixes and return the readable local path.
 local function resolve_readable_path(path)
     if not path or path == "" then
         return nil
     end
 
-    local expanded_path = vim.fn.expand(path)
-    if expanded_path ~= "" and vim.fn.filereadable(expanded_path) == 1 then
-        return expanded_path
+    path = path:gsub("^~/", vim.env.HOME .. "/")
+
+    if vim.fn.filereadable(path) == 1 then
+        return path
     end
 end
 
