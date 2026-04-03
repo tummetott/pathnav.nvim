@@ -18,7 +18,7 @@ It is also **git-aware** and warns you if you try to open a path that does not m
 
 ## 🎬 Demo
 
-[Watch the demo](assets/demo.mp4)
+[![Demo](demo.gif)](demo.mp4)
 
 ## 🚀 API
 
