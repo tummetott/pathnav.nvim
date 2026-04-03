@@ -169,3 +169,6 @@ clearing.
 
 Use `vim.api.nvim_feedkeys(vim.keycode('<key>'), <mode>, false)` to fall back to
 the original key behavior instead.
+
+
+❤️ Tummetott
