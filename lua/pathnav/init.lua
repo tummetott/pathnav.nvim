@@ -10,7 +10,6 @@ local parser = require("pathnav.parser")
 local target = require("pathnav.target")
 local highlight = require("pathnav.highlight")
 -- TODO: maybe piggyback on the match block of dismiss.nvim
--- TODO: add vimdoc
 
 ---@class pathnav.OpenOptions
 ---@field highlight? boolean
