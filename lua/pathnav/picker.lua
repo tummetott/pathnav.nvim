@@ -1,29 +1,21 @@
 local M = {}
+local config = require("pathnav.config")
 
--- Ensure the configured picker highlight exists before the overlay is shown.
+-- Create a picker highlight group derived from `Visual`.
 --
--- When the configured group is missing, derive it from `Visual` so the picker
--- still has a visible default appearance without requiring explicit setup.
-local function derive_highlight_group(hlgroup)
-    if vim.fn.hlexists(hlgroup) == 1 then
-        return
-    end
-
-    local visual = vim.api.nvim_get_hl(0, { name = "Visual", link = false })
-    visual.bold = true
-    vim.api.nvim_set_hl(0, hlgroup, visual)
+-- This provides a visible default label style when the configured group does
+-- not exist.
+local function create_derived_highlight_group(name)
+    local highlight = vim.api.nvim_get_hl(0, { name = "Visual", link = false })
+    highlight.bold = true
+    vim.api.nvim_set_hl(0, name, highlight)
 end
 
 -- Assign one label character to each candidate window.
 --
--- Windows are sorted by window number first so label assignment stays
--- predictable across repeated picker invocations.
+-- The provided window order determines the label assignment.
 local function assign_labels(windows, charset)
     local labeled_windows = {}
-
-    table.sort(windows, function(a, b)
-        return vim.api.nvim_win_get_number(a) < vim.api.nvim_win_get_number(b)
-    end)
 
     for i, win in ipairs(windows) do
         local key = charset:sub(i, i)
@@ -45,8 +37,9 @@ end
 local function show_overlays(labeled_windows, hlgroup)
     local overlays = {}
 
-    -- Labels are shown inside temporary floats, so ensure the label highlight exists first.
-    derive_highlight_group(hlgroup)
+    if vim.fn.hlexists(hlgroup) ~= 1 then
+        create_derived_highlight_group(hlgroup)
+    end
 
     for key, target in pairs(labeled_windows) do
         local mask_buf = vim.api.nvim_create_buf(false, true)
@@ -123,9 +116,10 @@ end
 -- The picker shows one label per candidate, waits for a single keypress, and
 -- returns the chosen window. `<Esc>` and invalid input cancel the picker and
 -- return `nil`.
-function M.pick_window(windows, opts)
-    local labeled_windows = assign_labels(vim.deepcopy(windows), opts.charset)
-    local overlays = show_overlays(labeled_windows, opts.hlgroup)
+function M.pick_window(windows)
+    local picker_config = config.get().picker
+    local labeled_windows = assign_labels(windows, picker_config.charset)
+    local overlays = show_overlays(labeled_windows, picker_config.hlgroup)
     -- getchar() blocks until a single selection key or <Esc>.
     local ok, ch = pcall(vim.fn.getchar)
 

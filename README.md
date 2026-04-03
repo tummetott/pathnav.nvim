@@ -1,51 +1,71 @@
 # pathnav.nvim
 
-Navigate paths in text.
+`pathnav.nvim` detects paths under the cursor and **opens**, **highlights**,
+or **jumps** to the referenced location. It is especially useful for
+LLM-generated output, where paths are embedded in prose.
 
-`pathnav.nvim` detects paths under the cursor and opens the addressed location. It is designed for paths embedded in prose, such as LLM-generated reports, documentation, logs, or markdown.
+The plugin understands multiple path formats, such as:
 
-The plugin understands multiple path formats and can optionally **jump to** or **highlight** the addressed lines.
+* Absolute / relative paths
+* Markdown embedded paths
+* `path:line` locations
+* `path:line-line` ranges
+* GitHub-style `#L` line fragments
+* GitHub blob permalinks
+* Paths wrapped in surrounding prose or punctuation
 
-It is also **git-aware** and supports GitHub-style permalinks.
+It is also **git-aware** and warns you if you try to open a path that does not match your current checked-out commit.
 
----
-
-# Features
-
-* Open paths under the cursor
-* Jump to a specific line or range
-* Highlight addressed lines without moving the cursor
-* Detect paths inside plain text or markdown
-* Understand GitHub-style permalinks
-* Resolve permalinks against the current git checkout
-* Smart window selection with optional picker
-
----
-
-# Installation
-
-Example using **lazy.nvim**:
+## 🚀 API
 
 ```lua
-return {
+---@param opts? pathnav.ConfigOptions
+require("pathnav").setup(opts)
+```
+
+Initializes and configures the plugin. See [Configuration](#configuration).
+
+```lua
+---@param opts? pathnav.OpenOptions
+---@return boolean
+require("pathnav").open(opts)
+```
+
+Opens the path under the cursor. Returns `false` if no readable path could be
+resolved; `true` otherwise (including when the user cancels window selection).
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `jump` | `boolean` | `true` | Move the cursor to the referenced location and switch focus to the target window. |
+| `highlight` | `boolean` | `true` | Highlight the referenced line or range. |
+| `target_window` | `pathnav.ConfigOptions.TargetWindow` | — | Override target window selection for this call. Same shape as the `target_window` section in `setup()`. |
+
+## ⚡️ Requirements
+
+Neovim `0.9.0` or newer
+
+## 📦 Installation with `lazy.nvim`
+
+```lua
+{
     "tummetott/pathnav.nvim",
     lazy = true,
+    ---@type pathnav.ConfigOptions
     opts = {
-        -- See config section
+        -- Optional config overrides
     },
     keys = {
         {
             "<c-]>",
             function()
-                if not require("pathnav").open({
-                    jump = true,
-                    highlight = false,
-                }) then
-                    vim.cmd("normal! <C-]>")
+                if not require("pathnav").open() then
+                    vim.api.nvim_feedkeys(vim.keycode('<C-]>'), 'n', false)
                 end
             end,
             desc = "Open path or fallback to tag jump",
         },
+        -- CAUTION: `<c-[>` only works in terminal emulators that support the
+        -- kitty keyboard protocol. Otherwise, it overrides `<Esc>`
         {
             "<c-[>",
             function()
@@ -60,102 +80,92 @@ return {
 }
 ```
 
----
-
-# Usage
-
-The main entry point is:
+## ⚙️ Configuration
 
 ```lua
-require("pathnav").open()
+---@type pathnav.ConfigOptions
+{
+    -- Highlight options for referenced lines.
+    highlight = {
+        -- Highlight group used for the referenced line or range.
+        hlgroup = "PathnavReferenceText",
+        -- Events that clear the active reference highlight.
+        clear_events = { "CursorMoved" },
+    },
+
+    -- Target window selection options.
+    target_window = {
+        -- Exclude windows from target selection.
+        exclude = {
+            -- Exclude the current window.
+            current = true,
+            -- Exclude buffers with these filetypes.
+            filetypes = {},
+            -- Exclude buffers with these buftypes.
+            buftypes = {
+                "help",
+                "nofile",
+                "prompt",
+                "quickfix",
+                "terminal",
+            },
+            -- Callback that receives a window id and returns `true` when that
+            -- window is excluded from target selection.
+            condition = nil,
+        },
+        -- Prefer candidate windows that match these conditions.
+        prefer = {
+            -- Prefer a window that already shows the referenced file.
+            matching_file = true,
+            -- Prefer the window selected by the previous pathnav jump.
+            last_target = false,
+        },
+        -- Split behavior when a new target window is created.
+        split = {
+            -- Direction in which the new split opens.
+            direction = vim.o.splitright and "right" or "left",
+            -- Always open in a new split instead of reusing candidates.
+            force = false,
+        },
+    },
+
+    -- Window picker appearance.
+    picker = {
+        -- Characters used as picker labels.
+        charset = "jklasdfhguiopqwert",
+        -- Highlight group used for picker labels.
+        hlgroup = "PathnavPickerLabel",
+    }
+}
 ```
 
-Options:
+## 🪟 Window selection
 
-| Option      | Description                                |
-| ----------- | ------------------------------------------ |
-| `jump`      | Move the cursor to the addressed location |
-| `highlight` | Highlight the addressed line or range     |
+When opening a path, `pathnav.nvim` selects a target window from the current tabpage.
 
-Example: highlight the addressed location without changing the current window focus.
-
-```lua
-require("pathnav").open({
-    jump = false,
-    highlight = true,
-})
-```
-
-The highlight is cleared automatically when one of the configured `clear_events` fires.
-
----
-
-# Window selection
-
-When opening a path, `pathnav.nvim` selects a target window from the **current tabpage**.
-
-Floating windows and excluded buffers are ignored.
+Floating windows are ignored. The remaining windows are filtered by
+`target_window.exclude`.
 
 Selection rules:
 
-1. **No eligible window** → open a new split
-2. **One eligible window** → reuse it
-3. **Multiple eligible windows**
-
-   * reuse the one already showing the target file if possible
-   * otherwise show a window picker
+1. If `target_window.split.force` is enabled or there is no candidate window, open a new split.
+2. If there is one candidate window, use it.
+3. If the configured preferences identify one preferred candidate window, use it.
+4. Otherwise, use the picker.
 
 Picker controls:
 
 * press the displayed label to select a window
 * `<Esc>` or invalid input cancels the operation
 
----
+## 🐛 Caveats
 
-# Configuration
+`require("pathnav").open()` cannot be used from within an `expr` mapping.
 
-Default configuration:
+`open()` changes windows, opens buffers, moves the cursor, and adds highlights.
+These operations are not allowed while an `expr` mapping is being evaluated.
+Deferring the call would fix this, but introduces other edge cases with highlight
+clearing.
 
-```lua
-{
-    highlight = {
-        hlgroup = "LspReferenceText",
-        clear_events = { "CursorHold", "CursorHoldI" },
-    },
-
-    target = {
-        -- Target windows are selected from the current tabpage after applying
-        -- these exclusion rules.
-        exclude = {
-            current_win = true,
-            filetypes = {},
-            buftypes = { "help", "nofile", "prompt", "quickfix", "terminal" },
-            condition = nil,
-        },
-
-        picker = {
-            always_ask = false,
-            charset = "jklasdfhguiopqwert",
-            hlgroup = "PathnavPickerLabel",
-        },
-    },
-}
-```
-
-# Supported path formats
-
-`pathnav.nvim` detects the following patterns:
-
-``` 
-path/to/file.lua
-~/path/to/file.lua
-path/to/file.lua:12
-path/to/file.lua:12-20
-path/to/file.lua#L12
-path/to/file.lua#L12-20
-path/to/file.lua#L12-L20
-[link](path/to/file.lua#L12)
-.../blob/<commit>/path/to/file.lua#L12
-```
-
-These may appear in plain text, markdown, or GitHub links.
+Use `vim.api.nvim_feedkeys(vim.keycode('<key>'), <mode>, false)` to fall back to
+the original key behavior instead.

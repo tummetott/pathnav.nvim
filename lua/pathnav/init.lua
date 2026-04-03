@@ -1,12 +1,24 @@
 local M = {}
+
+if vim.fn.has("nvim-0.9.0") == 0 then
+    vim.notify("pathnav.nvim requires Neovim 0.9.0 or newer", vim.log.levels.ERROR)
+    return M
+end
+
 local config = require("pathnav.config")
 local parser = require("pathnav.parser")
 local target = require("pathnav.target")
 local highlight = require("pathnav.highlight")
 -- TODO: maybe piggyback on the match block of dismiss.nvim
--- TODO: new keymap for open in new split, even if eligible windows exist? introduce open({ force_split = true }) ?
+-- TODO: add vimdoc
+
+---@class pathnav.OpenOptions
+---@field highlight? boolean
+---@field jump? boolean
+---@field target_window? pathnav.ConfigOptions.TargetWindow
 
 -- Apply user config for the plugin.
+---@param opts? pathnav.ConfigOptions
 function M.setup(opts)
     config.setup(opts)
 end
@@ -33,12 +45,12 @@ local function location_exists(buf, start_lnum, end_lnum)
     return true
 end
 
--- Ensure the addressed location is visible in the target window.
+-- Adjust the target window viewport to show the addressed location.
 --
 -- If the line or range is already on screen, leave the view unchanged.
 -- Otherwise move the cursor to the start line and place it roughly one quarter
 -- of the window height below the top.
-local function ensure_location_visible(win, start_lnum, end_lnum)
+local function adjust_viewport(win, start_lnum, end_lnum)
     local last_lnum = end_lnum or start_lnum
     local first_visible
     local last_visible
@@ -59,16 +71,13 @@ local function ensure_location_visible(win, start_lnum, end_lnum)
     end)
 end
 
--- Open the resolved path in a target window and apply the requested view behavior.
+-- Open the resolved file in a target window.
 --
--- This chooses the target window, opens the file there when necessary, moves to
--- the addressed location when it exists, and optionally highlights that
--- location while leaving focus in the source window.
-local function open_path(path, start_lnum, end_lnum, opts)
-    local source_win = vim.api.nvim_get_current_win()
-    local target_win = target.select_target(source_win, path)
+-- This chooses the target window and opens the file there when necessary.
+local function open_file(source_win, path, target_win_opts)
+    local target_win = target.select_target(source_win, path, target_win_opts)
     if not target_win then
-        return
+        return nil
     end
 
     local target_buf = vim.api.nvim_win_get_buf(target_win)
@@ -79,30 +88,22 @@ local function open_path(path, start_lnum, end_lnum, opts)
         end)
         target_buf = vim.api.nvim_win_get_buf(target_win)
     end
-    local has_location = location_exists(target_buf, start_lnum, end_lnum)
 
-    if has_location then
-        ensure_location_visible(target_win, start_lnum, end_lnum)
-
-        if opts.jump then
-            vim.api.nvim_win_set_cursor(target_win, { start_lnum, 0 })
-        end
-
-        if opts.highlight then
-            highlight.range(target_buf, start_lnum, end_lnum)
-        end
-    end
-
-    vim.api.nvim_set_current_win(opts.jump and target_win or source_win)
+    return target_win, target_buf
 end
 
 -- Open the path under the cursor.
 --
--- Returns `false` when no readable path could be resolved at the
--- cursor.
+-- Returns `false` when no readable path could be resolved at the cursor.
+-- Returns `true` once a path was resolved, even if target selection is later
+-- cancelled by the user.
+---@param opts? pathnav.OpenOptions
+---@return boolean
 function M.open(opts)
+    local source_win = vim.api.nvim_get_current_win()
+
     opts = vim.tbl_extend("force", {
-        highlight = false,
+        highlight = true,
         jump = true,
     }, opts or {})
 
@@ -115,7 +116,25 @@ function M.open(opts)
         return false
     end
 
-    open_path(path, start_lnum, end_lnum, opts)
+    local target_win, target_buf = open_file(source_win, path, opts.target_window)
+    if not target_win then
+        return true
+    end
+
+    local has_location = location_exists(target_buf, start_lnum, end_lnum)
+    if has_location then
+        adjust_viewport(target_win, start_lnum, end_lnum)
+
+        if opts.jump then
+            vim.api.nvim_win_set_cursor(target_win, { start_lnum, 0 })
+        end
+
+        if opts.highlight then
+            highlight.range(target_buf, start_lnum, end_lnum)
+        end
+    end
+
+    vim.api.nvim_set_current_win(opts.jump and target_win or source_win)
     return true
 end
 
