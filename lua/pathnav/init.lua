@@ -1,12 +1,10 @@
 local M = {}
-local config = require("follow.config")
-local parser = require("follow.parser")
-local target = require("follow.target")
-local highlight = require("follow.highlight")
--- TODO: find better plugin name
+local config = require("pathnav.config")
+local parser = require("pathnav.parser")
+local target = require("pathnav.target")
+local highlight = require("pathnav.highlight")
 -- TODO: maybe piggyback on the match block of dismiss.nvim
--- TODO: rename follow()
--- TODO: new keymap for open in new split, even if eledible windows exist? introduce follow({ force_split = true }) ?
+-- TODO: new keymap for open in new split, even if eligible windows exist? introduce open({ force_split = true }) ?
 
 -- Apply user config for the plugin.
 function M.setup(opts)
@@ -61,12 +59,12 @@ local function ensure_location_visible(win, start_lnum, end_lnum)
     end)
 end
 
--- Open the resolved reference in a target window and apply the requested view behavior.
+-- Open the resolved path in a target window and apply the requested view behavior.
 --
 -- This chooses the target window, opens the file there when necessary, moves to
 -- the addressed location when it exists, and optionally highlights that
 -- location while leaving focus in the source window.
-local function open_reference(path, start_lnum, end_lnum, opts)
+local function open_path(path, start_lnum, end_lnum, opts)
     local source_win = vim.api.nvim_get_current_win()
     local target_win = target.select_target(source_win, path)
     if not target_win then
@@ -98,11 +96,11 @@ local function open_reference(path, start_lnum, end_lnum, opts)
     vim.api.nvim_set_current_win(opts.jump and target_win or source_win)
 end
 
--- Follow the file reference under the cursor.
+-- Open the path under the cursor.
 --
--- Returns `false` when no readable file reference could be resolved at the
+-- Returns `false` when no readable path could be resolved at the
 -- cursor.
-function M.follow(opts)
+function M.open(opts)
     opts = vim.tbl_extend("force", {
         highlight = false,
         jump = true,
@@ -112,12 +110,12 @@ function M.follow(opts)
         highlight.clear()
     end
 
-    local path, start_lnum, end_lnum = parser.parse_cursor_reference()
+    local path, start_lnum, end_lnum = parser.parse_path_under_cursor()
     if not path then
         return false
     end
 
-    open_reference(path, start_lnum, end_lnum, opts)
+    open_path(path, start_lnum, end_lnum, opts)
     return true
 end
 

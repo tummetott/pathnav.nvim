@@ -1,7 +1,7 @@
 local M = {}
 
-local config = require("follow.config")
-local picker = require("follow.picker")
+local config = require("pathnav.config")
+local picker = require("pathnav.picker")
 
 -- Return whether this window is excluded as a target window.
 --
@@ -56,7 +56,7 @@ end
 
 -- Return the subset of candidate windows that already show the resolved target.
 --
--- This lets follow detect whether one of several candidate windows is already
+-- This lets pathnav detect whether one of several candidate windows is already
 -- showing the file that should be opened. That information is used to avoid an
 -- unnecessary picker when there is exactly one obvious destination.
 local function find_wins_showing_target(wins, target_path)
@@ -74,7 +74,7 @@ local function find_wins_showing_target(wins, target_path)
     return matching_wins
 end
 
--- Choose the window that should receive the followed reference.
+-- Choose the window that should receive the opened path.
 --
 -- The selection policy is:
 --   1. If there is no eligible window, open a new one.

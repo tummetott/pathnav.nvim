@@ -1,10 +1,10 @@
 local M = {}
 
-local config = require("follow.config")
+local config = require("pathnav.config")
 
 local hl = {
-    augroup = vim.api.nvim_create_augroup("follow-highlight", { clear = false }),
-    ns = vim.api.nvim_create_namespace("follow-highlight"),
+    augroup = vim.api.nvim_create_augroup("pathnav-highlight", { clear = false }),
+    ns = vim.api.nvim_create_namespace("pathnav-highlight"),
 }
 
 -- Clear the extmark highlight and any pending clear autocmd.

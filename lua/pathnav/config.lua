@@ -25,7 +25,7 @@ local defaults = {
         picker = {
             always_ask = false,
             charset = "jklasdfhguiopqwert",
-            hlgroup = "FollowPickerLabel",
+            hlgroup = "PathnavPickerLabel",
         },
     },
 }

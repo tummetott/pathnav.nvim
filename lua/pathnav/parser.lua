@@ -23,11 +23,11 @@ local function current_checkout_commit(state)
     return state.current_commit
 end
 
-local function resolve_hashtag_reference(token, state)
+local function resolve_fragment_path(token, state)
     -- Split the token into a path part and a final `#L...` line suffix.
     -- The suffix match is limited to the characters used by supported line
     -- fragments so unrelated trailing text is less likely to be mistaken for
-    -- a file reference.
+    -- a path.
     local path, line_fragment = token:match("^(.-)(#L[%dCL%-]+)$")
     if not path or not line_fragment then
         return nil
@@ -85,9 +85,9 @@ local function resolve_hashtag_reference(token, state)
     end
 end
 
-local function resolve_colon_reference(token)
+local function resolve_colon_path(token)
     -- Split off the final `:<line>...` suffix. The suffix is restricted to the
-    -- characters used by supported colon references so unrelated trailing
+    -- characters used by supported colon paths so unrelated trailing
     -- punctuation is less likely to be mistaken for line information.
     local path, line_suffix = token:match("^(.-)(:%d[%d:%-]*)$")
     if not path or not line_suffix then
@@ -128,30 +128,30 @@ local function resolve_colon_reference(token)
     end
 end
 
--- Resolve one extracted candidate into a local file reference.
-local function resolve_reference(token, state)
+-- Resolve one extracted candidate into a local path.
+local function resolve_path_candidate(token, state)
     if not token then
         return nil
     end
 
     -- If the token contains markdown link syntax, resolve the destination from
     -- its trailing `](...)` section.
-    local reference = token:match(".*](%b())")
-    if reference then
-        token = reference:sub(2, -2)
+    local destination = token:match(".*](%b())")
+    if destination then
+        token = destination:sub(2, -2)
         token = token:match("^<(.*)>$") or token
     end
 
-    -- Strip punctuation from the outer edges so references embedded in prose
+    -- Strip punctuation from the outer edges so paths embedded in prose
     -- like `(foo.lua:12).` can still be recognized.
     token = token:gsub("^[%(%[%{\"'`@]+", ""):gsub("[%)%]%}\"'`,;:%.]+$", "")
 
-    local path, start_lnum, end_lnum = resolve_hashtag_reference(token, state)
+    local path, start_lnum, end_lnum = resolve_fragment_path(token, state)
     if path then
         return path, start_lnum, end_lnum
     end
 
-    path, start_lnum, end_lnum = resolve_colon_reference(token)
+    path, start_lnum, end_lnum = resolve_colon_path(token)
     if path then
         return path, start_lnum, end_lnum
     end
@@ -162,11 +162,11 @@ local function resolve_reference(token, state)
     end
 end
 
--- Parse the file reference under the cursor.
+-- Parse the path under the cursor.
 --
 -- This scans one logical token under the cursor, tries resolving it after the
 -- first line, then progressively appends up to four continuation lines.
-function M.parse_cursor_reference()
+function M.parse_path_under_cursor()
     local buf = vim.api.nvim_get_current_buf()
     local row, col = unpack(vim.api.nvim_win_get_cursor(0)) -- row 1-based, col 0-based
     local state = {}
@@ -186,7 +186,7 @@ function M.parse_cursor_reference()
     for consumed_lines = 1, 5 do
         local whitespace_start = token:find("%s")
         local candidate = whitespace_start and token:sub(1, whitespace_start - 1) or token
-        local path, start_lnum, end_lnum = resolve_reference(candidate, state)
+        local path, start_lnum, end_lnum = resolve_path_candidate(candidate, state)
         if path then
             return path, start_lnum, end_lnum
         end

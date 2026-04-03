@@ -1,10 +1,10 @@
-# follow.nvim
+# pathnav.nvim
 
-Navigate file references in text.
+Navigate paths in text.
 
-`follow.nvim` detects file references under the cursor and opens the referenced location. It is designed for references embedded in prose, such as LLM-generated reports, documentation, logs, or markdown.
+`pathnav.nvim` detects paths under the cursor and opens the addressed location. It is designed for paths embedded in prose, such as LLM-generated reports, documentation, logs, or markdown.
 
-The plugin understands multiple reference formats and can optionally **jump to** or **highlight** the referenced lines.
+The plugin understands multiple path formats and can optionally **jump to** or **highlight** the addressed lines.
 
 It is also **git-aware** and supports GitHub-style permalinks.
 
@@ -12,10 +12,10 @@ It is also **git-aware** and supports GitHub-style permalinks.
 
 # Features
 
-* Open file references under the cursor
+* Open paths under the cursor
 * Jump to a specific line or range
-* Highlight referenced lines without moving the cursor
-* Detect references inside plain text or markdown
+* Highlight addressed lines without moving the cursor
+* Detect paths inside plain text or markdown
 * Understand GitHub-style permalinks
 * Resolve permalinks against the current git checkout
 * Smart window selection with optional picker
@@ -28,7 +28,7 @@ Example using **lazy.nvim**:
 
 ```lua
 return {
-    "tummetott/follow.nvim",
+    "tummetott/pathnav.nvim",
     lazy = true,
     opts = {
         -- See config section
@@ -37,24 +37,24 @@ return {
         {
             "<c-]>",
             function()
-                if not require("follow").follow({
+                if not require("pathnav").open({
                     jump = true,
                     highlight = false,
                 }) then
                     vim.cmd("normal! <C-]>")
                 end
             end,
-            desc = "Follow reference or fallback to tag jump",
+            desc = "Open path or fallback to tag jump",
         },
         {
             "<c-[>",
             function()
-                require("follow").follow({
+                require("pathnav").open({
                     jump = false,
                     highlight = true,
                 })
             end,
-            desc = "Highlight reference",
+            desc = "Highlight path location",
         },
     },
 }
@@ -67,20 +67,20 @@ return {
 The main entry point is:
 
 ```lua
-require("follow").follow()
+require("pathnav").open()
 ```
 
 Options:
 
 | Option      | Description                                |
 | ----------- | ------------------------------------------ |
-| `jump`      | Move the cursor to the referenced location |
-| `highlight` | Highlight the referenced line or range     |
+| `jump`      | Move the cursor to the addressed location |
+| `highlight` | Highlight the addressed line or range     |
 
-Example: highlight the referenced location without changing the current window focus.
+Example: highlight the addressed location without changing the current window focus.
 
 ```lua
-require("follow").follow({
+require("pathnav").open({
     jump = false,
     highlight = true,
 })
@@ -92,7 +92,7 @@ The highlight is cleared automatically when one of the configured `clear_events`
 
 # Window selection
 
-When opening a reference, `follow.nvim` selects a target window from the **current tabpage**.
+When opening a path, `pathnav.nvim` selects a target window from the **current tabpage**.
 
 Floating windows and excluded buffers are ignored.
 
@@ -136,15 +136,15 @@ Default configuration:
         picker = {
             always_ask = false,
             charset = "jklasdfhguiopqwert",
-            hlgroup = "FollowPickerLabel",
+            hlgroup = "PathnavPickerLabel",
         },
     },
 }
 ```
 
-# Supported reference formats
+# Supported path formats
 
-`follow.nvim` detects the following patterns:
+`pathnav.nvim` detects the following patterns:
 
 ``` 
 path/to/file.lua
