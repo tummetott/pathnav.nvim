@@ -80,7 +80,7 @@ Neovim `0.9.0` or newer
 }
 ```
 
-## ⚙️ Configuration
+## Configuration
 
 ```lua
 ---@type pathnav.ConfigOptions
