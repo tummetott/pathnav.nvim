@@ -158,6 +158,26 @@ Picker controls:
 * press the displayed label to select a window
 * `<Esc>` or invalid input cancels the operation
 
+## 🤖 Usage with LLMs
+
+To get navigable file references in LLM output, instruct your agent to use the
+following format. Add this to your `AGENTS.md`, system prompt, or equivalent:
+
+```markdown
+Always reference files using paths relative to the most appropriate base:
+- **Inside cwd**: relative to cwd — `src/server/api.ts`
+- **Inside home**: relative to `~` — `~/other-project/src/lib.rs`
+- **Anything else**: absolute — `/etc/nginx/nginx.conf`
+
+Allowed formats:
+- Whole file: `<path>`
+- Single line: `<path>:<line>`
+- Line range (inclusive): `<path>:<start>-<end>`
+```
+
+`pathnav.nvim` understands all of these formats and will jump directly to the
+referenced line or range.
+
 ## 🐛 Caveats
 
 `require("pathnav").open()` cannot be used from within an `expr` mapping.
