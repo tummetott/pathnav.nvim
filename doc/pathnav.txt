@@ -1,0 +1,211 @@
+*pathnav.nvim*  Detect, open, and highlight file paths under the cursor.
+
+
+Author: Tummetott
+
+==============================================================================
+CONTENTS                                                     *pathnav-contents*
+
+1. DESCRIPTION...........................................|pathnav-description|
+2. REQUIREMENTS.......................................|pathnav-requirements|
+3. API.......................................................|pathnav-api|
+4. CONFIGURATION......................................|pathnav-configuration|
+5. WINDOW SELECTION.................................|pathnav-window-selection|
+6. CAVEATS.................................................|pathnav-caveats|
+
+==============================================================================
+1. DESCRIPTION                                            *pathnav-description*
+
+|pathnav.nvim| detects paths under the cursor and opens, highlights, or jumps
+to the referenced location. It is especially useful for LLM-generated output
+where paths are embedded in prose.
+
+Supported path formats:
+
+- Absolute and relative paths (`/path/to/file`, `src/main.rs`)
+- Paths with `~` expansion (`~/other-project/file.ts`)
+- `path:line` and `path:start-end` locations
+- GitHub-style `#L` line fragments (`path#L42`, `path#L10-L20`)
+- GitHub blob permalinks with commit validation
+- Markdown embedded paths (`[text](path:line)`)
+- Paths wrapped in surrounding prose or punctuation
+
+The plugin is also git-aware and warns you when opening a blob permalink that
+does not match your current checked-out commit.
+
+==============================================================================
+2. REQUIREMENTS                                          *pathnav-requirements*
+
+Neovim 0.9.0 or higher.
+
+==============================================================================
+3. API                                                            *pathnav-api*
+
+setup({opts})                                               *pathnav.setup()*
+
+        Initialize and configure the plugin. See |pathnav-configuration|.
+
+open({opts})                                                 *pathnav.open()*
+
+        Open the path under the cursor. Returns `false` if no readable path
+        could be resolved; `true` otherwise (including when the user cancels
+        window selection).
+
+        Options: ~
+
+        `jump` (boolean, default: `true`)
+            Move the cursor to the referenced location and switch focus to the
+            target window.
+
+        `highlight` (boolean, default: `true`)
+            Highlight the referenced line or range.
+
+        `target_window` (pathnav.ConfigOptions.TargetWindow, default: nil)
+            Override target window selection for this call. Same shape as the
+            `target_window` section in |pathnav.setup()|.
+
+==============================================================================
+4. CONFIGURATION                                        *pathnav-configuration*
+
+                                                              *pathnav.opts*
+Options are passed to |pathnav.setup()|.
+>lua
+    require('pathnav').setup({
+        highlight = {
+            hlgroup = 'PathnavReferenceText',
+            clear_events = { 'CursorMoved' },
+        },
+        target_window = {
+            exclude = {
+                current = true,
+                filetypes = {},
+                buftypes = { 'help', 'nofile', 'prompt', 'quickfix', 'terminal' },
+                condition = nil,
+            },
+            prefer = {
+                matching_file = true,
+                last_target = false,
+            },
+            split = {
+                direction = vim.o.splitright and 'right' or 'left',
+                force = false,
+            },
+        },
+        picker = {
+            charset = 'jklasdfhguiopqwert',
+            hlgroup = 'PathnavPickerLabel',
+        },
+    })
+<
+
+highlight.hlgroup                           *pathnav.opts.highlight.hlgroup*
+        Type: `string` ~
+        Default: `'PathnavReferenceText'` ~
+
+        Highlight group used for the referenced line or range. If the group
+        does not exist, the plugin derives it from `LspReferenceText`.
+
+highlight.clear_events                 *pathnav.opts.highlight.clear_events*
+        Type: `string[]` ~
+        Default: `{ 'CursorMoved' }` ~
+
+        Autocommand events that clear the active reference highlight.
+
+target_window.exclude.current   *pathnav.opts.target_window.exclude.current*
+        Type: `boolean` ~
+        Default: `true` ~
+
+        Exclude the current window from target selection.
+
+target_window.exclude.filetypes *pathnav.opts.target_window.exclude.filetypes*
+        Type: `string[]` ~
+        Default: `{}` ~
+
+        Exclude windows whose buffer filetype is in this list.
+
+target_window.exclude.buftypes   *pathnav.opts.target_window.exclude.buftypes*
+        Type: `string[]` ~
+        Default: `{ 'help', 'nofile', 'prompt', 'quickfix', 'terminal' }` ~
+
+        Exclude windows whose buffer buftype is in this list.
+
+target_window.exclude.condition *pathnav.opts.target_window.exclude.condition*
+        Type: `fun(win: integer): boolean` ~
+        Default: `nil` ~
+
+        Callback that receives a window id and returns `true` when that window
+        should be excluded from target selection.
+
+target_window.prefer.matching_file *pathnav.opts.target_window.prefer.matching_file*
+        Type: `boolean` ~
+        Default: `true` ~
+
+        Prefer a candidate window that already shows the referenced file.
+
+target_window.prefer.last_target *pathnav.opts.target_window.prefer.last_target*
+        Type: `boolean` ~
+        Default: `false` ~
+
+        Prefer the window that was selected by the previous |pathnav.open()|
+        call.
+
+target_window.split.direction   *pathnav.opts.target_window.split.direction*
+        Type: `'left'|'right'|'above'|'below'` ~
+        Default: `'right'` or `'left'` based on `splitright` ~
+
+        Direction in which a new split opens when no suitable candidate window
+        is available.
+
+target_window.split.force           *pathnav.opts.target_window.split.force*
+        Type: `boolean` ~
+        Default: `false` ~
+
+        Always open the file in a new split instead of reusing candidate
+        windows.
+
+picker.charset                             *pathnav.opts.picker.charset*
+        Type: `string` ~
+        Default: `'jklasdfhguiopqwert'` ~
+
+        Characters used as picker labels. Each character maps to one candidate
+        window. Windows beyond the length of the string cannot be selected.
+
+picker.hlgroup                             *pathnav.opts.picker.hlgroup*
+        Type: `string` ~
+        Default: `'PathnavPickerLabel'` ~
+
+        Highlight group used for the picker label overlay. If the group does
+        not exist, the plugin derives it from `Visual` with `bold = true`.
+
+==============================================================================
+5. WINDOW SELECTION                                  *pathnav-window-selection*
+
+When |pathnav.open()| is called, a target window is selected from the current
+tabpage. Floating windows are always ignored. The remaining windows are
+filtered by `target_window.exclude`.
+
+Selection rules:
+
+1. If `target_window.split.force` is set, or no candidates remain after
+   exclusion, open a new split.
+2. If there is exactly one candidate, use it.
+3. If the configured preferences narrow it down to one candidate, use it.
+4. Otherwise, show the picker.
+
+Picker controls:
+
+- Press the displayed label to select a window.
+- `<Esc>` or any unlabeled key cancels the operation.
+
+==============================================================================
+6. CAVEATS                                                  *pathnav-caveats*
+
+|pathnav.open()| cannot be used from within an `expr` mapping. The function
+changes windows, opens buffers, moves the cursor, and adds highlights —
+operations that are not permitted while an `expr` mapping is being evaluated.
+
+Use `vim.api.nvim_feedkeys(vim.keycode('<key>'), <mode>, false)` to fall back
+to the original key behavior instead.
+
+==============================================================================
+vim:tw=78:ts=8:ft=help:norl:
