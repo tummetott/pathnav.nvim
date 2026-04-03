@@ -16,6 +16,10 @@ The plugin understands multiple path formats, such as:
 
 It is also **git-aware** and warns you if you try to open a path that does not match your current checked-out commit.
 
+## 🎬 Demo
+
+[Watch the demo](assets/demo.mp4)
+
 ## 🚀 API
 
 ```lua
