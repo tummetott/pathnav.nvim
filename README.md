@@ -1,8 +1,11 @@
 # pathnav.nvim
 
-`pathnav.nvim` detects paths under the cursor and **opens**, **highlights**,
-or **jumps** to the referenced location. It is especially useful for
-LLM-generated output, where paths are embedded in prose.
+`pathnav.nvim` is a supercharged `gf` for paths embedded in prose.
+
+It detects paths under the cursor and **opens**, **highlights**, or **jumps**
+to the referenced location. It is especially useful for LLM-generated output,
+documentation, logs, and markdown, where file references often appear inline
+and wrapped in surrounding punctuation.
 
 The plugin understands multiple path formats, such as:
 
@@ -60,18 +63,14 @@ Neovim `0.9.0` or newer
     },
     keys = {
         {
-            "<c-]>",
+            "gf",
             function()
-                if not require("pathnav").open() then
-                    vim.api.nvim_feedkeys(vim.keycode('<C-]>'), 'n', false)
-                end
+                require("pathnav").open()
             end,
-            desc = "Open path or fallback to tag jump",
+            desc = "Jump to file under cursor",
         },
-        -- CAUTION: `<c-[>` only works in terminal emulators that support the
-        -- kitty keyboard protocol. Otherwise, it overrides `<Esc>`
         {
-            "<c-[>",
+            "<leader>h",
             function()
                 require("pathnav").open({
                     jump = false,
