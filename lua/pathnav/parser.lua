@@ -146,6 +146,17 @@ local function resolve_path_candidate(token, state)
     -- like `(foo.lua:12).` can still be recognized.
     token = token:gsub("^[%(%[%{\"'`@]+", ""):gsub("[%)%]%}\"'`,;:%.]+$", "")
 
+	if token:find("^git:") then
+		local arg, suffix = token:match("^git:(.-)([%#:][%dL].*)$")
+		arg = arg or token:sub(5)
+
+		local fpath = vim.fn.tempname() .. "_" .. vim.fn.fnamemodify(arg, ":t")
+		local f = io.open(fpath, "w")
+		f:write(table.concat(vim.fn.systemlist({ "git", "show", arg }), "\n") .. "\n")
+		f:close()
+
+		token = fpath .. (suffix or "")
+	end
     local path, start_lnum, end_lnum = resolve_fragment_path(token, state)
     if path then
         return path, start_lnum, end_lnum
