@@ -21,6 +21,9 @@ function M.clear()
 end
 
 -- Highlight the addressed line or range and register a clear autocmd.
+--
+-- The clear is scoped to the highlighted buffer, so a highlight placed in
+-- another window survives until it has been looked at.
 function M.range(buf, start_lnum, end_lnum)
     local last_lnum = end_lnum or start_lnum
 
@@ -45,6 +48,7 @@ function M.range(buf, start_lnum, end_lnum)
 
         hl.clear_autocmd = vim.api.nvim_create_autocmd(highlight.clear_events, {
             group = hl.augroup,
+            buffer = buf,
             once = true,
             callback = function()
                 M.clear()

@@ -93,7 +93,7 @@ Neovim `0.9.0` or newer
     highlight = {
         -- Highlight group used for the referenced line or range.
         hlgroup = "PathnavReferenceText",
-        -- Events that clear the active reference highlight.
+        -- Events in the highlighted buffer that clear the reference highlight.
         clear_events = { "CursorMoved" },
     },
 

@@ -121,7 +121,8 @@ highlight.clear_events                 *pathnav.opts.highlight.clear_events*
         Type: `string[]` ~
         Default: `{ 'CursorMoved' }` ~
 
-        Autocommand events that clear the active reference highlight.
+        Autocommand events in the highlighted buffer that clear the active
+        reference highlight.
 
 target_window.exclude.current   *pathnav.opts.target_window.exclude.current*
         Type: `boolean` ~
