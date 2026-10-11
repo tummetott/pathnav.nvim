@@ -55,8 +55,9 @@ open({opts})                                                 *pathnav.open()*
 
         `jump` (boolean, default: `true`)
             Move the cursor to the referenced location and switch focus to the
-            target window. With `false`, only the current tabpage is searched,
-            since a file opened elsewhere would not be visible.
+            target window. With `false`, the file lands somewhere already
+            visible without moving: only the current tabpage is searched, and
+            never the window you are in.
 
         `highlight` (boolean, default: `true`)
             Highlight the referenced line or range.

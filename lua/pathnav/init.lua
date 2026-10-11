@@ -112,15 +112,18 @@ function M.open(opts)
         jump = true,
     }, opts or {})
 
-    -- An open that does not jump leaves the cursor where it is, so a file
-    -- opened in another tabpage would never be seen. The configured `exclude`
-    -- still applies, so a tabpage that must not receive a file still refuses
-    -- one.
+    -- An open that does not jump leaves the cursor where it is, so the file
+    -- has to land somewhere already visible from there. Another tabpage would
+    -- never be seen, and the current window would replace what is being read.
+    -- Exclusion still applies.
     if not opts.jump then
         opts.target_tabpage = vim.tbl_extend("force", opts.target_tabpage or {}, {
             order = function()
                 return { vim.api.nvim_get_current_tabpage() }
             end,
+        })
+        opts.target_window = vim.tbl_deep_extend("force", opts.target_window or {}, {
+            exclude = { current = true },
         })
     end
 
