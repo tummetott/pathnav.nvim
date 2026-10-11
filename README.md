@@ -43,9 +43,10 @@ resolved; `true` otherwise (including when the user cancels window selection).
 
 | Option | Type | Default | Description |
 |---|---|---|---|
-| `jump` | `boolean` | `true` | Move the cursor to the referenced location and switch focus to the target window. |
+| `jump` | `boolean` | `true` | Move the cursor to the referenced location and switch focus to the target window. With `false`, only the current tabpage is searched. |
 | `highlight` | `boolean` | `true` | Highlight the referenced line or range. |
 | `target_window` | `pathnav.ConfigOptions.TargetWindow` | — | Override target window selection for this call. Same shape as the `target_window` section in `setup()`. |
+| `target_tabpage` | `pathnav.ConfigOptions.TargetTabpage` | — | Override the tabpage search for this call. Same shape as the `target_tabpage` section in `setup()`. |
 
 ## ⚡️ Requirements
 
@@ -112,8 +113,8 @@ Neovim `0.9.0` or newer
                 "quickfix",
                 "terminal",
             },
-            -- Callback that receives a window id and returns `true` when that
-            -- window is excluded from target selection.
+            -- Callback receiving a window id. Returning `true` ignores
+            -- that window.
             condition = nil,
         },
         -- Prefer candidate windows that match these conditions.
@@ -132,6 +133,18 @@ Neovim `0.9.0` or newer
         },
     },
 
+    -- Tabpage search options.
+    target_tabpage = {
+        -- Callback returning the tabpage handles that may host the target
+        -- window, in search order.
+        order = function()
+            return { vim.api.nvim_get_current_tabpage() }
+        end,
+        -- Callback receiving a tabpage handle. Returning `true` ignores
+        -- that tabpage.
+        exclude = nil,
+    },
+
     -- Window picker appearance.
     picker = {
         -- Characters used as picker labels.
@@ -144,22 +157,28 @@ Neovim `0.9.0` or newer
 
 ## 🪟 Window selection
 
-When opening a path, `pathnav.nvim` selects a target window from the current tabpage.
-
-Floating windows are ignored. The remaining windows are filtered by
-`target_window.exclude`.
+When a path is resolved, the file has to open in some window. You can configure
+how that window is chosen. Every window in the current tabpage is a candidate,
+except floating windows and those filtered out by `target_window.exclude`.
 
 Selection rules:
 
-1. If `target_window.split.force` is enabled or there is no candidate window, open a new split.
-2. If there is one candidate window, use it.
-3. If the configured preferences identify one preferred candidate window, use it.
-4. Otherwise, use the picker.
+1. If there is one candidate, it is used.
+2. If there are several, `target_window.prefer` narrows them down.
+3. If the choice is still ambiguous, the picker decides.
+4. If there is no candidate at all, a new split opens instead.
 
 Picker controls:
 
 * press the displayed label to select a window
 * `<Esc>` or invalid input cancels the operation
+
+Setting `target_window.split.force` skips all of this and always opens a new
+split.
+
+All of the above happens inside the current tabpage. `target_tabpage` widens
+that: pathnav runs the same search in each tabpage you configure, in order,
+and stops at the first one that offers a window.
 
 ## 🤖 Usage with LLMs
 

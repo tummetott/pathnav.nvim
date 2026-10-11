@@ -15,6 +15,7 @@ local highlight = require("pathnav.highlight")
 ---@field highlight? boolean
 ---@field jump? boolean
 ---@field target_window? pathnav.ConfigOptions.TargetWindow
+---@field target_tabpage? pathnav.ConfigOptions.TargetTabpage
 
 -- Apply user config for the plugin.
 ---@param opts? pathnav.ConfigOptions
@@ -73,8 +74,13 @@ end
 -- Open the resolved file in a target window.
 --
 -- This chooses the target window and opens the file there when necessary.
-local function open_file(source_win, path, target_win_opts)
-    local target_win = target.select_target(source_win, path, target_win_opts)
+local function open_file(source_win, path, opts)
+    local target_win = target.select_target(
+        source_win,
+        path,
+        opts.target_window,
+        opts.target_tabpage
+    )
     if not target_win then
         return nil
     end
@@ -106,6 +112,18 @@ function M.open(opts)
         jump = true,
     }, opts or {})
 
+    -- An open that does not jump leaves the cursor where it is, so a file
+    -- opened in another tabpage would never be seen. The configured `exclude`
+    -- still applies, so a tabpage that must not receive a file still refuses
+    -- one.
+    if not opts.jump then
+        opts.target_tabpage = vim.tbl_extend("force", opts.target_tabpage or {}, {
+            order = function()
+                return { vim.api.nvim_get_current_tabpage() }
+            end,
+        })
+    end
+
     if opts.highlight then
         highlight.clear()
     end
@@ -115,7 +133,7 @@ function M.open(opts)
         return false
     end
 
-    local target_win, target_buf = open_file(source_win, path, opts.target_window)
+    local target_win, target_buf = open_file(source_win, path, opts)
     if not target_win then
         return true
     end

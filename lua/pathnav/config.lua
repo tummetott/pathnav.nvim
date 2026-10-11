@@ -52,6 +52,14 @@ local M = {}
 ---@field prefer? pathnav.ConfigOptions.TargetWindow.Prefer
 ---@field split? pathnav.ConfigOptions.TargetWindow.Split
 
+---@class pathnav.Config.TargetTabpage
+---@field order fun(): integer[]
+---@field exclude? fun(tabpage: integer): boolean
+
+---@class pathnav.ConfigOptions.TargetTabpage
+---@field order? fun(): integer[]
+---@field exclude? fun(tabpage: integer): boolean
+
 ---@class pathnav.Config.Picker
 ---@field charset string
 ---@field hlgroup string
@@ -63,11 +71,13 @@ local M = {}
 ---@class pathnav.Config
 ---@field highlight pathnav.Config.Highlight
 ---@field target_window pathnav.Config.TargetWindow
+---@field target_tabpage pathnav.Config.TargetTabpage
 ---@field picker pathnav.Config.Picker
 
 ---@class pathnav.ConfigOptions
 ---@field highlight? pathnav.ConfigOptions.Highlight
 ---@field target_window? pathnav.ConfigOptions.TargetWindow
+---@field target_tabpage? pathnav.ConfigOptions.TargetTabpage
 ---@field picker? pathnav.ConfigOptions.Picker
 
 -- Default plugin configuration.
@@ -98,6 +108,12 @@ local defaults = {
             direction = vim.o.splitright and "right" or "left",
             force = false,
         },
+    },
+    target_tabpage = {
+        order = function()
+            return { vim.api.nvim_get_current_tabpage() }
+        end,
+        exclude = nil,
     },
     picker = {
         charset = "jklasdfhguiopqwert",
